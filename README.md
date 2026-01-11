@@ -1,9 +1,9 @@
 # Reachy Mini Robot with NeMo Agent Toolkit Tutorial
 
-This tutorial showcases a real-time AI agent built with the **NVIDIA NeMo Agent Toolkit**, powered by **NVIDIA Nemotron models**, controlling a **Reachy Mini Robot**. The agent uses an intelligent LLM router to dynamically route between:
-- **Nemotron nano text** for text-based interactions
-- **Nemotron nano VLM** (Vision Language Model) for visual understanding
-- **REACT agent** for tool-based actions
+This tutorial showcases a real-time AI agent built with the **NVIDIA NeMo Agent Toolkit**, powered by **Qwen models via HuggingFace Inference API**, controlling a **Reachy Mini Robot**. The agent uses an intelligent LLM router to dynamically route between:
+- **Qwen2.5-7B-Instruct** for text-based interactions
+- **Qwen2.5-VL-7B-Instruct** (Vision Language Model) for visual understanding
+- **Qwen2.5-72B-Instruct** REACT agent for tool-based actions
 
 ![Reachy Mini Robot Demo](ces_tutorial.png)
 
@@ -17,33 +17,66 @@ The system consists of three main components running in parallel:
 
 ![System Architecture](ces_tutorial_arch.png)
 
+## Quick Start with Docker (Recommended)
+
+The easiest way to run the system is with Docker:
+
+```bash
+# 1. Create .env file with your API keys
+cp .env.template .env
+# Edit .env with your HF_API_KEY and ELEVENLABS_API_KEY
+
+# 2. Start all services
+docker compose up --build
+
+# 3. Open in browser:
+#    - Bot UI: http://localhost:7860/client/
+#    - Robot Viewer: http://localhost:8080
+#    - Robot Dashboard: http://localhost:8000
+```
+
+To stop: `docker compose down`
+
 ## Prerequisites
 
-- Python 3.10+
-- [uv](https://github.com/astral-sh/uv) package manager
-- NVIDIA API Key (for Nemotron models)
+- Docker (for Docker setup) OR Python 3.12+ with [uv](https://github.com/astral-sh/uv) (for local setup)
+- HuggingFace API Key (for Qwen models via Inference Providers)
 - ElevenLabs API Key (for text-to-speech)
 
 ## Setup Instructions
 
-### 1. Clone and Navigate to Repository
+### Option A: Docker Setup (Recommended)
 
-```bash
-cd /path/to/reachy-personal-assistant
-```
+1. **Create Environment File**
+   ```bash
+   cp .env.template .env
+   # Edit .env with your API keys
+   ```
 
-### 2. Create Environment File
+2. **Run with Docker Compose**
+   ```bash
+   docker compose up --build
+   ```
+
+3. **Access the Services**
+   - **Bot/Pipecat UI**: http://localhost:7860/client/
+   - **Robot Video Viewer**: http://localhost:8080
+   - **Robot Dashboard**: http://localhost:8000
+   - **NAT Service**: http://localhost:8001
+
+### Option B: Local Setup (Manual)
+
+#### 1. Create Environment File
 
 Create a `.env` file in the main directory with your API keys:
 
 ```bash
-NVIDIA_API_KEY=your_nvidia_api_key_here
+# Get your HuggingFace token from: https://huggingface.co/settings/tokens
+HF_API_KEY=hf_xxxxxxxxxxxxxxxxxxxx
 ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
 ```
 
-### 3. Setup Bot Service
-
-In a terminal window:
+#### 2. Setup Bot Service
 
 ```bash
 cd bot
@@ -51,9 +84,7 @@ uv venv
 uv sync
 ```
 
-### 4. Setup NeMo Agent Service
-
-In a separate terminal window:
+#### 3. Setup NeMo Agent Service
 
 ```bash
 cd nat
@@ -61,61 +92,36 @@ uv venv
 uv sync
 ```
 
-## Running the System
+#### 4. Running Locally (3 terminals)
 
-You'll need **three terminal windows** running simultaneously.
-
-### Terminal 1: Start Reachy Mini Daemon
-
-Navigate to the `bot` directory and start the robot daemon:
-
-**For macOS:**
+**Terminal 1: Start Reachy Mini Daemon**
 ```bash
 cd bot
+# macOS:
 uv run mjpython -m reachy_mini.daemon.app.main --sim --no-localhost-only
-```
-
-**For Linux:**
-```bash
-cd bot
+# Linux:
 uv run -m reachy_mini.daemon.app.main --sim --no-localhost-only
 ```
 
-*Note: The `--sim` flag runs the robot in simulation mode. Remove it if using actual hardware.*
-
-### Terminal 2: Start Bot Service
-
-In the `bot` directory:
-
-```bash
-cd bot
-uv run --env-file ../.env python main.py
-```
-
-This service handles:
-- Vision processing through the robot's camera
-- Speech recognition and text-to-speech
-- Robot movement coordination
-- Emotional expression through dance moves
-
-### Terminal 3: Start NeMo Agent Service
-
-In the `nat` directory:
-
+**Terminal 2: Start NeMo Agent Service**
 ```bash
 cd nat
 uv run --env-file ../.env nat serve --config_file src/ces_tutorial/config.yml --port 8001
 ```
 
-This launches the NeMo Agent Toolkit server with intelligent model routing capabilities.
+**Terminal 3: Start Bot Service**
+```bash
+cd bot
+uv run --env-file ../.env python main.py
+```
 
 ## How It Works
 
 1. **Vision & Audio Input**: The bot captures visual information and listens for speech
-2. **Agent Processing**: The NeMo Agent router intelligently selects the appropriate model:
-   - Text queries → Nemotron nano text model
-   - Visual queries → Nemotron nano VLM
-   - Action requests → REACT agent with tool calling
+2. **Agent Processing**: The NeMo Agent router intelligently selects the appropriate Qwen model:
+   - Text queries → Qwen2.5-7B-Instruct
+   - Visual queries → Qwen2.5-VL-7B-Instruct
+   - Action requests → Qwen2.5-72B-Instruct REACT agent with tool calling
 3. **Robot Actions**: Based on the agent's response, the bot executes movements, expressions, or speaks
 
 ## Demo
@@ -134,18 +140,22 @@ reachy-personal-assistant/
 │   └── src/ces_tutorial/
 │       ├── config.yml     # Agent configuration
 │       └── functions/     # Router and agent implementations
-└── .env                   # API keys (create this file)
+├── Dockerfile             # Docker image definition
+├── docker-compose.yml     # Docker Compose configuration
+├── viewer_server.py       # Robot video streaming server
+└── .env                   # API keys (create from .env.template)
 ```
 
 ## Troubleshooting
 
-- **Port conflicts**: Ensure port 8001 is available for the NeMo Agent service
+- **Port conflicts**: Ensure ports 7860, 8000, 8001, 8080 are available
 - **API key errors**: Verify your `.env` file is properly formatted and contains valid keys
-- **Robot connection issues**: Check that the Reachy daemon started successfully before launching the bot service
+- **Robot connection issues**: Check that the Reachy daemon started successfully
+- **Docker build issues**: Try `docker compose down && docker compose up --build`
 
 ## Resources
 
 - [NVIDIA NeMo Agent Toolkit](https://github.com/NVIDIA/NeMo-Agent-Toolkit)
 - [Reachy Mini Robot](https://www.pollen-robotics.com/)
-- [NVIDIA Nemotron Models](https://build.nvidia.com/)
-
+- [Qwen2.5 Models](https://huggingface.co/collections/Qwen/qwen25)
+- [HuggingFace Inference Providers](https://huggingface.co/docs/inference-providers/en/index)

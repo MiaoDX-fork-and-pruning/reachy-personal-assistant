@@ -1,0 +1,19 @@
+# Reachy Personal Assistant
+#
+# Usage:
+#   docker compose up --build    # Start (rebuilds if code changed)
+#   docker compose down          # Stop
+#   docker compose logs -f       # View logs
+
+services:
+  app:
+    build: .
+    ports:
+      - "7860:7860"   # Bot/Pipecat
+      - "8000:8000"   # Reachy daemon dashboard
+      - "8001:8001"   # NAT service
+      - "8080:8080"   # Video viewer (open this in browser)
+      - "8765:8765"   # WebSocket video stream (internal)
+    env_file:
+      - .env
+    restart: unless-stopped

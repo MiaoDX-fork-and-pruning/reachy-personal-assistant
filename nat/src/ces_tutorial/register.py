@@ -1,6 +1,9 @@
 # Import functions module to trigger registration of custom functions
 from ces_tutorial import functions
 
+# Note: HuggingFace integration now uses the built-in 'openai' LLM type
+# with api_base pointing to https://router.huggingface.co/v1
+
 # Monkey-patch NAT's ChatRequest to use our OpenAI-compatible schema
 import nat.data_models.api_server
 from ces_tutorial.openai_chat_request import OpenAIChatRequest, MessageDict

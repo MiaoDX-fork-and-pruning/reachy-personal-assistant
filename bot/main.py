@@ -78,7 +78,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
 
         llm = NATVisionLLMService(
             api_key=os.getenv("NVIDIA_API_KEY"),
-            base_url="http://localhost:8001/v1",
+            base_url=os.getenv("NAT_BASE_URL", "http://localhost:8001/v1"),
         )
 
         messages = [
@@ -125,25 +125,21 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             for message in frame.messages:
                 logger.info(f"Transcript [{message.role}]: {message.content}")
 
+        @rtvi.event_handler("on_client_ready")
+        async def on_client_ready(rtvi_proc):
+            logger.info("Client ready - setting bot ready")
+            await rtvi_proc.set_bot_ready()
+            # Kick off the conversation after bot is ready
+            messages.append({"role": "system", "content": "Say hello!"})
+            await task.queue_frames([LLMRunFrame()])
+
         @transport.event_handler("on_client_connected")
         async def on_client_connected(transport, client):
             logger.info(f"Client connected")
-
             await maybe_capture_participant_camera(transport, client)
-
             client_id = get_transport_client_id(transport, client)
-            
             # Set the user_id for automatic image fetching
             llm.set_user_id(client_id)
-
-            # Kick off the conversation.
-            messages.append(
-                {
-                    "role": "system",
-                    "content": f"Say hello!",
-                }
-            )
-            await task.queue_frames([LLMRunFrame()])
 
         @transport.event_handler("on_client_disconnected")
         async def on_client_disconnected(transport, client):

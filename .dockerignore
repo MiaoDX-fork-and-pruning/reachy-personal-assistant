@@ -1,0 +1,17 @@
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.git/
+.gitignore
+*.md
+.env
+.env.*
+.service_pids
+refs/
+specs/
+*.png
+*.mp4
