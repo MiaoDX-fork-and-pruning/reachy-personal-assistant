@@ -99,8 +99,10 @@ async def router_agent_fn(config: RouterAgentConfig, builder: Builder):
         
         return nat_messages
     
-    def _create_chat_response(content, model_name):
+    def _create_chat_response(content, model_name, route=None):
         """Create a ChatResponse from LLM content."""
+        if route:
+            content = f"[{route}] {content}"
         return ChatResponse(
             id="chatcmpl-" + str(int(time.time())),
             object="chat.completion",
@@ -182,7 +184,7 @@ async def router_agent_fn(config: RouterAgentConfig, builder: Builder):
                     
                     # Extract content and create response
                     content = response.content if hasattr(response, 'content') else str(response)
-                    return _create_chat_response(content, "chitchat")
+                    return _create_chat_response(content, "chitchat", route="chitchat")
                     
                 except Exception as e:
                     logger.error(f"RouterAgent: Error in chitchat path: {e}", exc_info=True)
@@ -211,7 +213,7 @@ async def router_agent_fn(config: RouterAgentConfig, builder: Builder):
                     
                     # Extract content and create response
                     content = response.content if hasattr(response, 'content') else str(response)
-                    return _create_chat_response(content, "image_understanding")
+                    return _create_chat_response(content, "image_understanding", route="vision")
                     
                 except Exception as e:
                     logger.error(f"RouterAgent: Error in image understanding path: {e}", exc_info=True)
@@ -238,6 +240,11 @@ async def router_agent_fn(config: RouterAgentConfig, builder: Builder):
                     # Call the agent function with the dict
                     agent_response = await agent_function.ainvoke(agent_input)
                     logger.warn(f"RouterAgent: Agent response received: {type(agent_response)}")
+
+                    # Add route prefix to agent response
+                    if hasattr(agent_response, 'choices') and agent_response.choices:
+                        original_content = agent_response.choices[0].message.content
+                        agent_response.choices[0].message.content = f"[agent] {original_content}"
                     return agent_response
                     
                 except Exception as e:
