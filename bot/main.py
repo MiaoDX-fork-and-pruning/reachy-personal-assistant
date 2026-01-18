@@ -77,7 +77,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         )
 
         llm = NATVisionLLMService(
-            api_key=os.getenv("NVIDIA_API_KEY"),
+            api_key="not-needed",  # Local NAT service, no auth required
             base_url=os.getenv("NAT_BASE_URL", "http://localhost:8001/v1"),
         )
 

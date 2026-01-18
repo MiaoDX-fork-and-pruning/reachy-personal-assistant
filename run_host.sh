@@ -7,6 +7,23 @@
 set -e
 cd "$(dirname "$0")"
 
+# Load environment variables from .env file
+if [ -f .env ]; then
+    echo "Loading environment variables from .env..."
+    set -a
+    source .env
+    set +a
+else
+    echo "WARNING: .env file not found. Copy .env.template to .env and set your API keys."
+fi
+
+# Map HF_API_KEY to OPENAI_API_KEY for NAT service
+# NAT (https://github.com/NVIDIA/NeMo-Agent-Toolkit) uses langchain's ChatOpenAI
+# which requires OPENAI_API_KEY env var. We set it to the HuggingFace token.
+if [ -n "$HF_API_KEY" ]; then
+    export OPENAI_API_KEY="$HF_API_KEY"
+fi
+
 # Stop any existing processes
 echo "Stopping existing processes..."
 supervisorctl -c supervisord.conf shutdown 2>/dev/null || true
@@ -17,6 +34,11 @@ sleep 2
 
 # Create log directory
 mkdir -p logs
+
+# Sync virtual environments
+echo "Syncing virtual environments..."
+(cd bot && uv sync)
+(cd nat && uv sync)
 
 echo "=================================================="
 echo "  Starting Reachy Personal Assistant (Host Mode)"
